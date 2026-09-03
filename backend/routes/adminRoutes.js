@@ -1,7 +1,7 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
 
-const User = require("../models/User");
+const User = require("../models/user");
 const protect = require("../middleware/authMiddleware");
 const admin = require("../middleware/adminMiddleware");
 
