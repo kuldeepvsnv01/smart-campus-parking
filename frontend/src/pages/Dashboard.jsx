@@ -18,7 +18,7 @@ function Dashboard() {
 
                 // Get parking areas
                 const areasResponse = await axios.get(
-                    "http://localhost:5001/api/parking/areas"
+                    "https://smart-campus-parking.onrender.com/api/parking/areas"
                 );
 
                 const parkingAreas =
@@ -28,7 +28,7 @@ function Dashboard() {
 
                 // Get user's bookings
                 const bookingsResponse = await axios.get(
-                    "http://localhost:5001/api/bookings/my-bookings",
+                    "https://smart-campus-parking.onrender.com/api/bookings/my-bookings",
                     {
                         headers: {
                             Authorization: `Bearer ${token}`
@@ -45,7 +45,7 @@ function Dashboard() {
 
                 for (const area of parkingAreas) {
                     const slotsResponse = await axios.get(
-                        `http://localhost:5001/api/parking/areas/${area._id}/slots`
+                        `https://smart-campus-parking.onrender.com/api/parking/areas/${area._id}/slots`
                     );
 
                     const slots =

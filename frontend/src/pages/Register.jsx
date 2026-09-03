@@ -15,7 +15,7 @@ function Register() {
 
         try {
             const response = await axios.post(
-                "http://localhost:5001/api/auth/register",
+                "https://smart-campus-parking.onrender.com/api/auth/register",
                 {
                     name,
                     email,

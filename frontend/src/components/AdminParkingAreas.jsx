@@ -9,7 +9,7 @@ function AdminParkingAreas() {
     const fetchAreas = async () => {
         try {
             const response = await axios.get(
-                "http://localhost:5001/api/parking/areas"
+                "https://smart-campus-parking.onrender.com/api/parking/areas"
             );
 
             const parkingAreas =
@@ -26,7 +26,7 @@ function AdminParkingAreas() {
                     try {
                         const slotsResponse =
                             await axios.get(
-                                `http://localhost:5001/api/parking/areas/${area._id}/slots`
+                                `https://smart-campus-parking.onrender.com/api/parking/areas/${area._id}/slots`
                             );
 
                         const slots =

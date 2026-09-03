@@ -11,7 +11,7 @@ function ManageSlots() {
         const fetchAreas = async () => {
             try {
                 const response = await axios.get(
-                    "http://localhost:5001/api/parking/areas"
+                    "https://smart-campus-parking.onrender.com/api/parking/areas"
                 );
 
                 setAreas(response.data.areas || []);
@@ -37,7 +37,7 @@ function ManageSlots() {
             setLoading(true);
 
             const response = await axios.get(
-                `http://localhost:5001/api/parking/areas/${areaId}/slots`
+                `https://smart-campus-parking.onrender.com/api/parking/areas/${areaId}/slots`
             );
 
             setSlots(response.data.slots || []);
@@ -88,7 +88,7 @@ function ManageSlots() {
             }
 
             const response = await axios.patch(
-                `http://localhost:5001/api/parking/slots/${slot._id}/status`,
+                `https://smart-campus-parking.onrender.com/api/parking/slots/${slot._id}/status`,
                 {
                     status:
                         action === "block"

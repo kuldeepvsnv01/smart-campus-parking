@@ -21,7 +21,7 @@ function ParkingSlots() {
         try {
             // Fetch parking area
             const areasResponse = await axios.get(
-                "http://localhost:5001/api/parking/areas"
+                "https://smart-campus-parking.onrender.com/api/parking/areas"
             );
 
             const foundArea =
@@ -40,7 +40,7 @@ function ParkingSlots() {
             }
 
             const slotsResponse = await axios.get(
-                `http://localhost:5001/api/parking/areas/${areaId}/available-slots`,
+                `https://smart-campus-parking.onrender.com/api/parking/areas/${areaId}/available-slots`,
                 {
                     params: {
                         startTime,
@@ -99,7 +99,7 @@ function ParkingSlots() {
             }
 
             const response = await axios.post(
-                "http://localhost:5001/api/bookings",
+                "https://smart-campus-parking.onrender.com/api/bookings",
                 {
                     parkingSlot: slotId,
                     vehicleNumber,

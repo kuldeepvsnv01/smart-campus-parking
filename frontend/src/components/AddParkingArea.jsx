@@ -13,7 +13,7 @@ function AddParkingArea() {
             const token = localStorage.getItem("token");
 
             const response = await axios.post(
-                "http://localhost:5001/api/parking/areas",
+                "https://smart-campus-parking.onrender.com/api/parking/areas",
                 {
                     name,
                     location,

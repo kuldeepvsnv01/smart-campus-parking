@@ -13,7 +13,7 @@ function Login() {
 
         try {
             const response = await axios.post(
-                "http://localhost:5001/api/auth/login",
+                "https://smart-campus-parking.onrender.com/api/auth/login",
                 {
                     email,
                     password

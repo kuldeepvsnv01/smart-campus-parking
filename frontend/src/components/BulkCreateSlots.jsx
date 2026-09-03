@@ -10,7 +10,7 @@ function BulkCreateSlots() {
         const fetchAreas = async () => {
             try {
                 const response = await axios.get(
-                    "http://localhost:5001/api/parking/areas"
+                    "https://smart-campus-parking.onrender.com/api/parking/areas"
                 );
 
                 setAreas(response.data.areas || []);
@@ -37,7 +37,7 @@ function BulkCreateSlots() {
         }
 
         const response = await axios.post(
-            "http://localhost:5001/api/parking/slots/bulk",
+            "https://smart-campus-parking.onrender.com/api/parking/slots/bulk",
             {
                 parkingArea,
                 totalSlots: Number(totalSlots)

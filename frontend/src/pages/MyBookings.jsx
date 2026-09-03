@@ -20,7 +20,7 @@ function MyBookings() {
             }
 
             const response = await axios.get(
-                "http://localhost:5001/api/bookings/my-bookings",
+                "https://smart-campus-parking.onrender.com/api/bookings/my-bookings",
                 {
                     headers: {
                         Authorization: `Bearer ${token}`
@@ -54,7 +54,7 @@ function MyBookings() {
             const token = localStorage.getItem("token");
 
             const response = await axios.delete(
-                `http://localhost:5001/api/bookings/${bookingId}`,
+                `https://smart-campus-parking.onrender.com/api/bookings/${bookingId}`,
                 {
                     headers: {
                         Authorization: `Bearer ${token}`

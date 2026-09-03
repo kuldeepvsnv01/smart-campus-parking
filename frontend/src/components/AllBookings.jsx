@@ -17,7 +17,7 @@ function AllBookings() {
             }
 
             const response = await axios.get(
-                "http://localhost:5001/api/bookings/all",
+                "https://smart-campus-parking.onrender.com/api/bookings/all",
                 {
                     headers: {
                         Authorization: `Bearer ${token}`
@@ -58,7 +58,7 @@ function AllBookings() {
                 localStorage.getItem("token");
 
             const response = await axios.delete(
-                `http://localhost:5001/api/bookings/${bookingId}`,
+                `https://smart-campus-parking.onrender.com/api/bookings/${bookingId}`,
                 {
                     headers: {
                         Authorization:

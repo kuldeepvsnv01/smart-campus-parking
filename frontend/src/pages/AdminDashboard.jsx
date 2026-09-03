@@ -34,7 +34,7 @@ function AdminDashboard() {
             const token = localStorage.getItem("token");
 
             const response = await axios.get(
-                "http://localhost:5001/api/admin/dashboard",
+                "https://smart-campus-parking.onrender.com/api/admin/dashboard",
                 {
                     headers: {
                         Authorization: `Bearer ${token}`
@@ -45,7 +45,7 @@ function AdminDashboard() {
             setMessage(response.data.message);
 
             const statsResponse = await axios.get(
-                "http://localhost:5001/api/admin/stats",
+                "https://smart-campus-parking.onrender.com/api/admin/stats",
                 {
                     headers: {
                         Authorization: `Bearer ${token}`
@@ -103,7 +103,7 @@ function AdminDashboard() {
                 localStorage.getItem("token");
 
             const response = await axios.get(
-                `http://localhost:5001/api/bookings/verify/${bookingId}`,
+                `https://smart-campus-parking.onrender.com/api/bookings/verify/${bookingId}`,
                 {
                     headers: {
                         Authorization:
@@ -142,7 +142,7 @@ function AdminDashboard() {
             localStorage.getItem("token");
 
         const response = await axios.patch(
-            `http://localhost:5001/api/bookings/entry/${verifiedBooking.bookingId}`,
+            `https://smart-campus-parking.onrender.com/api/bookings/entry/${verifiedBooking.bookingId}`,
             {},
             {
                 headers: {
@@ -177,7 +177,7 @@ const handleVehicleExit = async () => {
         const token = localStorage.getItem("token");
 
         const response = await axios.patch(
-            `http://localhost:5001/api/bookings/exit/${verifiedBooking.bookingId}`,
+            `https://smart-campus-parking.onrender.com/api/bookings/exit/${verifiedBooking.bookingId}`,
             {},
             {
                 headers: {

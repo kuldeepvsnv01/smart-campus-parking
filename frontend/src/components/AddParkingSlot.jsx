@@ -11,7 +11,7 @@ function AddParkingSlot() {
         const fetchAreas = async () => {
             try {
                 const response = await axios.get(
-                    "http://localhost:5001/api/parking/areas"
+                    "https://smart-campus-parking.onrender.com/api/parking/areas"
                 );
 
                 setAreas(response.data.areas);
@@ -34,7 +34,7 @@ function AddParkingSlot() {
             const token = localStorage.getItem("token");
 
             const response = await axios.post(
-                "http://localhost:5001/api/parking/slots",
+                "https://smart-campus-parking.onrender.com/api/parking/slots",
                 {
                     slotNumber,
                     parkingArea
