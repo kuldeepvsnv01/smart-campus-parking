@@ -193,15 +193,28 @@ The backend handles the server-side logic of the application, including authenti
 
 The frontend provides the user interface for both users and administrators. It handles parking slot selection, bookings, QR code generation and scanning, booking management, and the admin dashboard.
 
-## Screenshots
+## 📸 Screenshots
 
-### User Dashboard
+### Login Page
+![Login Page](screenshots/login%20page.jpeg)
 
-![User Dashboard](screenshots/login page.jpeg)
+### Register Page
+![Register Page](screenshots/register%20page.jpeg)
 
-### Parking Area
+### Parking Areas
+![Parking Areas](screenshots/parking%20area.jpeg)
 
-![Parking Area](screenshots/parking area.jpeg)
+### My Bookings
+![My Bookings](screenshots/my%20booking.jpeg)
+
+### Admin Dashboard
+![Admin Dashboard](screenshots/admin%20dashboard.jpeg)
+
+### All Bookings
+![All Bookings](screenshots/all%20bookings.jpeg)
+
+### QR Scanner
+![QR Scanner](screenshots/QR%20scanner.jpeg)
 
 ## Future Improvements
 
