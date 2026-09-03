@@ -103,9 +103,10 @@ function ParkingSlots() {
                 {
                     parkingSlot: slotId,
                     vehicleNumber,
-                    startTime,
-                    endTime
+                    startTime: new Date(startTime).toISOString(),
+                    endTime: new Date(endTime).toISOString()
                 },
+                
                 {
                     headers: {
                         Authorization: `Bearer ${token}`
