@@ -1,5 +1,11 @@
 # Smart Campus Parking Management System
 
+## 🌐 Live Demo
+
+**Frontend:** https://smart-campus-parking.vercel.app
+
+**Backend:** https://smart-campus-parking.onrender.com
+
 A web-based parking management system designed to make campus parking easier, faster, and more organized.
 
 The system allows users to view parking availability, reserve parking slots for specific time periods, manage bookings, and use QR codes for parking verification.
