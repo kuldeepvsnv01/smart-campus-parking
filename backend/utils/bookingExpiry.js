@@ -8,128 +8,101 @@ const expireBookings = async () => {
         const now = new Date();
 
         // --------------------------------
-        // 1. Complete expired bookings
+        // 1. Find bookings that just expired (still "active" but endTime has passed)
+        //    We need their slot IDs before marking them completed, so we know
+        //    which slots to re-evaluate.
         // --------------------------------
 
-        const expiredBookings = await Booking.find({
-            status: "active",
-            endTime: {
-                $lte: now
-            }
-        });
-
-        for (const booking of expiredBookings) {
-
-            booking.status = "completed";
-
-            await booking.save();
-
-            const slot = await ParkingSlot.findById(
-                booking.parkingSlot
-            );
-
-            if (!slot || slot.status === "blocked") {
-                continue;
-            }
-
-            // Check if another booking is currently active
-            const currentBooking = await Booking.findOne({
-                parkingSlot: booking.parkingSlot,
+        const expiredBookings = await Booking.find(
+            {
                 status: "active",
-                startTime: {
-                    $lte: now
+                endTime: { $lte: now }
+            },
+            "parkingSlot"
+        );
+
+        const expiredSlotIds = expiredBookings.map(
+            (b) => b.parkingSlot.toString()
+        );
+
+        // Bulk-complete all expired bookings in a single query
+        // instead of looping and calling .save() on each one.
+        if (expiredBookings.length > 0) {
+            await Booking.updateMany(
+                {
+                    status: "active",
+                    endTime: { $lte: now }
                 },
-                endTime: {
-                    $gt: now
+                {
+                    $set: { status: "completed" }
+                }
+            );
+        }
+
+        // --------------------------------
+        // 2. Fetch all remaining active bookings once, and compute the correct
+        //    status for every slot they touch in memory (no per-booking queries).
+        // --------------------------------
+
+        const activeBookings = await Booking.find(
+            { status: "active" },
+            "parkingSlot startTime endTime"
+        );
+
+        const slotStatusMap = new Map(); // slotId -> "occupied" | "reserved"
+
+        for (const booking of activeBookings) {
+            const slotId = booking.parkingSlot.toString();
+
+            if (booking.startTime <= now && booking.endTime > now) {
+                // Currently in progress — occupied takes priority
+                slotStatusMap.set(slotId, "occupied");
+            } else if (booking.startTime > now && !slotStatusMap.has(slotId)) {
+                // Future booking — reserved, unless the slot is already
+                // marked occupied by a currently-in-progress booking
+                slotStatusMap.set(slotId, "reserved");
+            }
+        }
+
+        // --------------------------------
+        // 3. Union of slots that need re-checking: slots that just had a
+        //    booking expire, plus slots tied to any currently active booking.
+        // --------------------------------
+
+        const slotIdsToRecheck = new Set([
+            ...expiredSlotIds,
+            ...activeBookings.map((b) => b.parkingSlot.toString())
+        ]);
+
+        if (slotIdsToRecheck.size === 0) {
+            return;
+        }
+
+        // --------------------------------
+        // 4. Single bulk write for all slot status updates.
+        //    Blocked slots are never touched (filter excludes them).
+        // --------------------------------
+
+        const bulkOps = [];
+
+        for (const slotId of slotIdsToRecheck) {
+            const newStatus = slotStatusMap.get(slotId) || "available";
+
+            bulkOps.push({
+                updateOne: {
+                    filter: {
+                        _id: slotId,
+                        status: { $ne: "blocked" }
+                    },
+                    update: {
+                        $set: { status: newStatus }
+                    }
                 }
             });
-
-            if (currentBooking) {
-
-                slot.status = "occupied";
-
-            } else {
-
-                // Check if another future booking exists
-                const futureBooking = await Booking.findOne({
-                    parkingSlot: booking.parkingSlot,
-                    status: "active",
-                    startTime: {
-                        $gt: now
-                    }
-                }).sort({
-                    startTime: 1
-                });
-
-                if (futureBooking) {
-
-                    slot.status = "reserved";
-
-                } else {
-
-                    slot.status = "available";
-
-                }
-            }
-
-            await slot.save();
         }
 
-
-        // --------------------------------
-        // 2. Activate current bookings
-        // --------------------------------
-
-        const currentBookings = await Booking.find({
-            status: "active",
-            startTime: {
-                $lte: now
-            },
-            endTime: {
-                $gt: now
-            }
-        });
-
-        for (const booking of currentBookings) {
-
-            const slot = await ParkingSlot.findById(
-                booking.parkingSlot
-            );
-
-            if (slot && slot.status !== "blocked") {
-
-                slot.status = "occupied";
-
-                await slot.save();
-
-            }
-        }
-
-
-        // --------------------------------
-        // 3. Mark future bookings reserved
-        // --------------------------------
-
-        const futureBookings = await Booking.find({
-            status: "active",
-            startTime: {
-                $gt: now
-            }
-        });
-
-        for (const booking of futureBookings) {
-
-            const slot = await ParkingSlot.findById(
-                booking.parkingSlot
-            );
-
-            if (slot && slot.status !== "blocked") {
-
-                slot.status = "reserved";
-
-                await slot.save();
-
-            }
+        if (bulkOps.length > 0) {
+            await ParkingSlot.bulkWrite(bulkOps);
         }
 
     } catch (error) {

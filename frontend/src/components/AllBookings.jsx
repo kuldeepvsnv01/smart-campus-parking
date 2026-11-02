@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import api from "../api/axiosInstance";
 
 function AllBookings() {
     const [bookings, setBookings] = useState([]);
@@ -10,20 +10,14 @@ function AllBookings() {
 
     const fetchBookings = async () => {
         try {
-            const token = localStorage.getItem("token");
+            setLoading(true);
 
-            if (!token) {
-                return;
-            }
-
-            const response = await axios.get(
-                "https://smart-campus-parking.onrender.com/api/bookings/all",
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`
-                    }
-                }
-            );
+            // NOTE: /bookings/all is now paginated server-side (default 10 per page).
+            // Since this admin view relies on client-side search across all bookings,
+            // we request a higher limit here rather than the default.
+            // For a much larger dataset, this should move to real server-side
+            // search + pagination instead of loading everything up front.
+            const response = await api.get("/bookings/all?limit=200");
 
             setBookings(
                 response.data.bookings || []
@@ -54,18 +48,10 @@ function AllBookings() {
         }
 
         try {
-            const token =
-                localStorage.getItem("token");
-
-            const response = await axios.delete(
-                `https://smart-campus-parking.onrender.com/api/bookings/${bookingId}`,
-                {
-                    headers: {
-                        Authorization:
-                            `Bearer ${token}`
-                    }
-                }
-            );
+            // bookingId here must be the human-readable bookingId (e.g. "BK-XXXX"),
+            // matching the DELETE /api/bookings/:bookingId route on the backend —
+            // NOT the Mongo _id.
+            const response = await api.delete(`/bookings/${bookingId}`);
 
             alert(
                 response.data.message ||
@@ -259,7 +245,7 @@ function AllBookings() {
 
                 </div>
             )}
-            
+
             {/* Booking Filters */}
 
             <div className="booking-filters">
@@ -543,7 +529,7 @@ function AllBookings() {
                                                 className="cancel-button"
                                                 onClick={() =>
                                                     handleCancelBooking(
-                                                        booking._id
+                                                        booking.bookingId
                                                     )
                                                 }
                                             >

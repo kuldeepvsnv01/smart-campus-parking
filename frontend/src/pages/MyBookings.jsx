@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import api from "../api/axiosInstance";
 import Navbar from "../components/Navbar";
 import { useNavigate } from "react-router-dom";
 import { QRCodeCanvas } from "qrcode.react";
@@ -19,14 +19,7 @@ function MyBookings() {
                 return;
             }
 
-            const response = await axios.get(
-                "https://smart-campus-parking.onrender.com/api/bookings/my-bookings",
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`
-                    }
-                }
-            );
+            const response = await api.get("/bookings/my-bookings");
 
             setBookings(response.data.bookings || []);
 
@@ -41,7 +34,6 @@ function MyBookings() {
     };
 
     const handleCancel = async (bookingId) => {
-
         const confirmCancel = window.confirm(
             "Are you sure you want to cancel this booking?"
         );
@@ -51,18 +43,9 @@ function MyBookings() {
         }
 
         try {
-            const token = localStorage.getItem("token");
+            const response = await api.patch(`/bookings/${bookingId}/cancel`);
 
-            const response = await axios.delete(
-                `https://smart-campus-parking.onrender.com/api/bookings/${bookingId}`,
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`
-                    }
-                }
-            );
-
-            alert(response.data.message);
+            alert(response.data.message || "Booking cancelled successfully");
 
             fetchBookings();
 

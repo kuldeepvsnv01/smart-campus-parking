@@ -1,5 +1,5 @@
 import { useState } from "react";
-import axios from "axios";
+import api from "../api/axiosInstance";
 import { Link, useNavigate } from "react-router-dom";
 
 function Register() {
@@ -7,26 +7,23 @@ function Register() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [vehicleNumber, setVehicleNumber] = useState("");
+    const [loading, setLoading] = useState(false);
 
     const navigate = useNavigate();
 
     const handleRegister = async (e) => {
         e.preventDefault();
+        setLoading(true);
 
         try {
-            const response = await axios.post(
-                "https://smart-campus-parking.onrender.com/api/auth/register",
-                {
-                    name,
-                    email,
-                    password,
-                    vehicleNumber
-                }
-            );
+            const response = await api.post("/auth/register", {
+                name,
+                email,
+                password,
+                vehicleNumber
+            });
 
-            console.log(response.data);
-
-            alert("Registration successful!");
+            alert(response.data.message || "Registration successful!");
 
             // Go to login after registration
             navigate("/login");
@@ -38,6 +35,8 @@ function Register() {
                 error.response?.data?.message ||
                 "Registration failed"
             );
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -200,8 +199,9 @@ function Register() {
                         <button
                             type="submit"
                             className="auth-submit-button"
+                            disabled={loading}
                         >
-                            Create Account
+                            {loading ? "Creating Account..." : "Create Account"}
                         </button>
 
                     </form>

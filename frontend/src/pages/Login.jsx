@@ -1,37 +1,27 @@
 import { useState } from "react";
-import axios from "axios";
+import api from "../api/axiosInstance";
 import { Link, useNavigate } from "react-router-dom";
 
 function Login() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [loading, setLoading] = useState(false);
 
     const navigate = useNavigate();
 
     const handleLogin = async (e) => {
         e.preventDefault();
+        setLoading(true);
 
         try {
-            const response = await axios.post(
-                "https://smart-campus-parking.onrender.com/api/auth/login",
-                {
-                    email,
-                    password
-                }
-            );
+            const response = await api.post("/auth/login", {
+                email,
+                password
+            });
 
-            console.log(response.data);
-
-            // Save JWT token
-            localStorage.setItem(
-                "token",
-                response.data.token
-            );
-
-            localStorage.setItem(
-                "user",
-                JSON.stringify(response.data.user)
-            );
+            // Save JWT token and user info
+            localStorage.setItem("token", response.data.token);
+            localStorage.setItem("user", JSON.stringify(response.data.user));
 
             alert("Login successful!");
 
@@ -44,11 +34,12 @@ function Login() {
 
         } catch (error) {
             console.error(error);
-
             alert(
                 error.response?.data?.message ||
                 "Login failed"
             );
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -163,8 +154,9 @@ function Login() {
                         <button
                             type="submit"
                             className="auth-submit-button"
+                            disabled={loading}
                         >
-                            Login
+                            {loading ? "Logging in..." : "Login"}
                         </button>
 
                     </form>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import api from "../api/axiosInstance";
 
 function ManageSlots() {
     const [areas, setAreas] = useState([]);
@@ -10,10 +10,7 @@ function ManageSlots() {
     useEffect(() => {
         const fetchAreas = async () => {
             try {
-                const response = await axios.get(
-                    "https://smart-campus-parking.onrender.com/api/parking/areas"
-                );
-
+                const response = await api.get("/parking/areas");
                 setAreas(response.data.areas || []);
 
             } catch (error) {
@@ -36,8 +33,8 @@ function ManageSlots() {
         try {
             setLoading(true);
 
-            const response = await axios.get(
-                `https://smart-campus-parking.onrender.com/api/parking/areas/${areaId}/slots`
+            const response = await api.get(
+                `/parking/areas/${areaId}/slots`
             );
 
             setSlots(response.data.slots || []);
@@ -59,7 +56,7 @@ function ManageSlots() {
 
         fetchSlots(areaId);
     };
-    
+
     const handleBlockToggle = async (slot) => {
 
         const action =
@@ -80,25 +77,13 @@ function ManageSlots() {
 
         try {
 
-            const token = localStorage.getItem("token");
-
-            if (!token) {
-                alert("Please login as admin.");
-                return;
-            }
-
-            const response = await axios.patch(
-                `https://smart-campus-parking.onrender.com/api/parking/slots/${slot._id}/status`,
+            const response = await api.patch(
+                `/parking/slots/${slot._id}/status`,
                 {
                     status:
                         action === "block"
                             ? "blocked"
                             : "available"
-                },
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`
-                    }
                 }
             );
 
@@ -124,7 +109,7 @@ function ManageSlots() {
             );
         }
     };
-    
+
     return (
         <div className="booking-panel">
 
@@ -274,7 +259,7 @@ function ManageSlots() {
                                         "⚫ Blocked"}
 
                                 </p>
-                                
+
                                 <button
                                     className={
                                         slot.status === "blocked"

@@ -1,25 +1,23 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import api from "../api/axiosInstance";
 
-function AddParkingSlot() {
+function AddParkingSlot({ onSlotAdded }) {
     const [areas, setAreas] = useState([]);
     const [parkingArea, setParkingArea] = useState("");
     const [slotNumber, setSlotNumber] = useState("");
+    const [loading, setLoading] = useState(false);
+    const [loadingAreas, setLoadingAreas] = useState(true);
 
     // Get parking areas
     useEffect(() => {
         const fetchAreas = async () => {
             try {
-                const response = await axios.get(
-                    "https://smart-campus-parking.onrender.com/api/parking/areas"
-                );
-
-                setAreas(response.data.areas);
+                const response = await api.get("/parking/areas");
+                setAreas(response.data.areas || []);
             } catch (error) {
-                console.error(
-                    "Failed to fetch parking areas:",
-                    error
-                );
+                console.error("Failed to fetch parking areas:", error);
+            } finally {
+                setLoadingAreas(false);
             }
         };
 
@@ -29,22 +27,13 @@ function AddParkingSlot() {
     // Create parking slot
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setLoading(true);
 
         try {
-            const token = localStorage.getItem("token");
-
-            const response = await axios.post(
-                "https://smart-campus-parking.onrender.com/api/parking/slots",
-                {
-                    slotNumber,
-                    parkingArea
-                },
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`
-                    }
-                }
-            );
+            const response = await api.post("/parking/slots", {
+                slotNumber,
+                parkingArea
+            });
 
             alert(
                 response.data.message ||
@@ -54,59 +43,51 @@ function AddParkingSlot() {
             // Clear slot number
             setSlotNumber("");
 
+            if (onSlotAdded) {
+                onSlotAdded();
+            }
+
         } catch (error) {
-            console.error(
-                "Create parking slot error:",
-                error
-            );
+            console.error("Create parking slot error:", error);
 
             alert(
                 error.response?.data?.message ||
                 "Failed to create parking slot"
             );
+        } finally {
+            setLoading(false);
         }
     };
 
     return (
         <div className="booking-panel">
-
             <h2>➕ Add Parking Slot</h2>
 
             <form onSubmit={handleSubmit}>
-
                 {/* Parking Area */}
                 <div className="form-group">
-
                     <label>Parking Area</label>
 
                     <select
                         value={parkingArea}
-                        onChange={(e) =>
-                            setParkingArea(e.target.value)
-                        }
+                        onChange={(e) => setParkingArea(e.target.value)}
                         required
+                        disabled={loadingAreas}
                     >
-
                         <option value="">
-                            Select Parking Area
+                            {loadingAreas ? "Loading areas..." : "Select Parking Area"}
                         </option>
 
                         {areas.map((area) => (
-                            <option
-                                key={area._id}
-                                value={area._id}
-                            >
+                            <option key={area._id} value={area._id}>
                                 {area.name}
                             </option>
                         ))}
-
                     </select>
-
                 </div>
 
                 {/* Slot Number */}
                 <div className="form-group">
-
                     <label>Slot Number</label>
 
                     <input
@@ -114,25 +95,21 @@ function AddParkingSlot() {
                         placeholder="A1"
                         value={slotNumber}
                         onChange={(e) =>
-                            setSlotNumber(
-                                e.target.value.toUpperCase()
-                            )
+                            setSlotNumber(e.target.value.toUpperCase())
                         }
                         required
                     />
-
                 </div>
 
                 <button
                     type="submit"
                     className="book-button"
                     style={{ marginTop: "20px" }}
+                    disabled={loading || loadingAreas}
                 >
-                    Add Slot
+                    {loading ? "Adding Slot..." : "Add Slot"}
                 </button>
-
             </form>
-
         </div>
     );
 }

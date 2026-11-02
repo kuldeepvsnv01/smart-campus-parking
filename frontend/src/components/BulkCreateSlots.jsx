@@ -1,24 +1,25 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import api from "../api/axiosInstance";
 
 function BulkCreateSlots() {
     const [areas, setAreas] = useState([]);
     const [parkingArea, setParkingArea] = useState("");
     const [totalSlots, setTotalSlots] = useState("");
+    const [isLoadingAreas, setIsLoadingAreas] = useState(true);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
         const fetchAreas = async () => {
             try {
-                const response = await axios.get(
-                    "https://smart-campus-parking.onrender.com/api/parking/areas"
-                );
-
+                const response = await api.get("/parking/areas");
                 setAreas(response.data.areas || []);
             } catch (error) {
                 console.error(
                     "Failed to fetch parking areas:",
                     error
                 );
+            } finally {
+                setIsLoadingAreas(false);
             }
         };
 
@@ -26,47 +27,37 @@ function BulkCreateSlots() {
     }, []);
 
     const handleSubmit = async (e) => {
-    e.preventDefault();
+        e.preventDefault();
 
-    try {
-        const token = localStorage.getItem("token");
+        if (isSubmitting) return;
+        setIsSubmitting(true);
 
-        if (!token) {
-            alert("Please login as admin first.");
-            return;
-        }
-
-        const response = await axios.post(
-            "https://smart-campus-parking.onrender.com/api/parking/slots/bulk",
-            {
+        try {
+            const response = await api.post("/parking/slots/bulk", {
                 parkingArea,
                 totalSlots: Number(totalSlots)
-            },
-            {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
-            }
-        );
+            });
 
-        alert(
-            `${response.data.message}\nCreated: ${response.data.count} slots`
-        );
+            alert(
+                `${response.data.message}\nCreated: ${response.data.count} slots`
+            );
 
-        setTotalSlots("");
+            setTotalSlots("");
 
-    } catch (error) {
-        console.error(
-            "Bulk slot creation error:",
-            error
-        );
+        } catch (error) {
+            console.error(
+                "Bulk slot creation error:",
+                error
+            );
 
-        alert(
-            error.response?.data?.message ||
-            "Failed to create slots"
-        );
-    }
-};
+            alert(
+                error.response?.data?.message ||
+                "Failed to create slots"
+            );
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
 
     return (
         <div className="booking-panel">
@@ -85,10 +76,13 @@ function BulkCreateSlots() {
                             setParkingArea(e.target.value)
                         }
                         required
+                        disabled={isLoadingAreas}
                     >
 
                         <option value="">
-                            Select Parking Area
+                            {isLoadingAreas
+                                ? "Loading parking areas..."
+                                : "Select Parking Area"}
                         </option>
 
                         {areas.map((area) => (
@@ -126,8 +120,9 @@ function BulkCreateSlots() {
                     type="submit"
                     className="book-button"
                     style={{ marginTop: "20px" }}
+                    disabled={isSubmitting || isLoadingAreas}
                 >
-                    ⚡ Generate Slots
+                    {isSubmitting ? "Generating..." : "⚡ Generate Slots"}
                 </button>
 
             </form>

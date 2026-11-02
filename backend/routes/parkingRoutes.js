@@ -33,7 +33,6 @@ router.post("/areas", protect, admin, async (req, res) => {
 });
 
 
-
 // Create a parking slot
 router.post("/slots", protect, admin, async (req, res) => {
     try {
@@ -44,12 +43,25 @@ router.post("/slots", protect, admin, async (req, res) => {
             parkingArea
         });
 
+        // Keep ParkingArea.totalSlots in sync with actual slot count
+        const area = await ParkingArea.findById(parkingArea);
+        if (area) {
+            await area.syncSlotCount();
+        }
+
         res.status(201).json({
             message: "Parking slot created successfully",
             slot
         });
 
     } catch (error) {
+        // Duplicate slotNumber within the same parkingArea (unique index)
+        if (error.code === 11000) {
+            return res.status(400).json({
+                message: "A slot with this number already exists in this parking area"
+            });
+        }
+
         res.status(500).json({
             message: "Failed to create parking slot",
             error: error.message
@@ -57,7 +69,6 @@ router.post("/slots", protect, admin, async (req, res) => {
     }
 });
 
-// Create multiple parking slots
 // Create multiple parking slots
 router.post("/slots/bulk", protect, admin, async (req, res) => {
     try {
@@ -109,6 +120,12 @@ router.post("/slots/bulk", protect, admin, async (req, res) => {
         const createdSlots = await ParkingSlot.insertMany(
             newSlots
         );
+
+        // Keep ParkingArea.totalSlots in sync with actual slot count
+        const area = await ParkingArea.findById(parkingArea);
+        if (area) {
+            await area.syncSlotCount();
+        }
 
         res.status(201).json({
             message: "Parking slots created successfully",
@@ -258,39 +275,33 @@ router.get(
                 slotNumber: 1
             });
 
-            const availableSlots = [];
+            // Blocked slots are never available
+            const candidateSlots = slots.filter(
+                (slot) => slot.status !== "blocked"
+            );
 
-            for (const slot of slots) {
+            const slotIds = candidateSlots.map(
+                (slot) => slot._id
+            );
 
-                // Blocked slots are never available
-                if (slot.status === "blocked") {
-                    continue;
-                }
+            // Single batched query for all overlapping bookings across every
+            // candidate slot, instead of one query per slot (N+1 fix)
+            const overlappingBookings = await Booking.find({
+                parkingSlot: { $in: slotIds },
+                status: "active",
+                startTime: { $lt: end },
+                endTime: { $gt: start }
+            });
 
-                // Check overlapping booking
-                const overlappingBooking =
-                    await Booking.findOne({
-                        parkingSlot: slot._id,
-                        status: "active",
+            const bookedSlotIds = new Set(
+                overlappingBookings.map(
+                    (booking) => booking.parkingSlot.toString()
+                )
+            );
 
-                        startTime: {
-                            $lt: end
-                        },
-
-                        endTime: {
-                            $gt: start
-                        }
-                    });
-
-                // No overlap = available
-                if (!overlappingBooking) {
-
-                    availableSlots.push(
-                        slot
-                    );
-
-                }
-            }
+            const availableSlots = candidateSlots.filter(
+                (slot) => !bookedSlotIds.has(slot._id.toString())
+            );
 
             res.status(200).json({
                 message:
@@ -336,6 +347,57 @@ router.get("/areas", async (req, res) => {
     } catch (error) {
         res.status(500).json({
             message: "Failed to fetch parking areas",
+            error: error.message
+        });
+    }
+});
+
+// Get occupancy stats per parking area
+router.get("/areas/stats", async (req, res) => {
+    try {
+        await expireBookings();
+
+        const slotStats = await ParkingSlot.aggregate([
+            {
+                $group: {
+                    _id: {
+                        parkingArea: "$parkingArea",
+                        status: "$status"
+                    },
+                    count: { $sum: 1 }
+                }
+            }
+        ]);
+
+        const stats = {};
+
+        for (const item of slotStats) {
+            if (!item._id.parkingArea) continue;
+            const areaId = item._id.parkingArea.toString();
+            if (!stats[areaId]) {
+                stats[areaId] = {
+                    total: 0,
+                    available: 0,
+                    occupied: 0,
+                    reserved: 0,
+                    blocked: 0
+                };
+            }
+            stats[areaId].total += item.count;
+            if (item._id.status === "available") stats[areaId].available = item.count;
+            if (item._id.status === "occupied") stats[areaId].occupied = item.count;
+            if (item._id.status === "reserved") stats[areaId].reserved = item.count;
+            if (item._id.status === "blocked") stats[areaId].blocked = item.count;
+        }
+
+        res.status(200).json({
+            message: "Parking area stats fetched successfully",
+            stats
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            message: "Failed to fetch parking area stats",
             error: error.message
         });
     }
@@ -404,6 +466,9 @@ router.patch(
 );
 
 // Block / Unblock parking slot - Admin only
+// NOTE: functionally overlaps with PATCH /slots/:slotId/status above.
+// Kept both since the frontend may already call one or the other —
+// worth consolidating to a single route before final submission.
 router.patch(
     "/slots/:slotId/block",
     protect,

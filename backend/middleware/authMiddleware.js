@@ -11,20 +11,16 @@ const protect = (req, res, next) => {
         }
 
         const token = authHeader.split(" ")[1];
-
-        const decoded = jwt.verify(
-            token,
-            process.env.JWT_SECRET
-        );
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
         req.user = decoded;
-
         next();
-
     } catch (error) {
-        return res.status(401).json({
-            message: "Not authorized. Invalid token."
-        });
+        // Distinguish expired vs invalid — helps frontend decide "refresh" vs "logout"
+        if (error.name === "TokenExpiredError") {
+            return res.status(401).json({ message: "Session expired. Please log in again." });
+        }
+        return res.status(401).json({ message: "Not authorized. Invalid token." });
     }
 };
 

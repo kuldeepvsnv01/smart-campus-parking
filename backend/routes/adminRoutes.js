@@ -1,7 +1,9 @@
 const express = require("express");
-const bcrypt = require("bcryptjs");
 
 const User = require("../models/user");
+const ParkingArea = require("../models/ParkingArea");
+const ParkingSlot = require("../models/ParkingSlot");
+const Booking = require("../models/Booking");
 const protect = require("../middleware/authMiddleware");
 const admin = require("../middleware/adminMiddleware");
 
@@ -20,12 +22,12 @@ router.post("/create-admin", async (req, res) => {
             });
         }
 
-        const hashedPassword = await bcrypt.hash(password, 10);
-
+        // Password is hashed automatically by the pre("save") hook in the User model.
+        // Do NOT hash it manually here — that would double-hash and break login.
         const newAdmin = await User.create({
             name,
             email,
-            password: hashedPassword,
+            password,
             vehicleNumber,
             role: "admin"
         });
@@ -58,42 +60,48 @@ router.get("/dashboard", protect, admin, (req, res) => {
 
 router.get("/stats", protect, admin, async (req, res) => {
     try {
-        const ParkingArea = require("../models/ParkingArea");
-        const ParkingSlot = require("../models/ParkingSlot");
-        const Booking = require("../models/Booking");
+        const expireBookings = require("../utils/bookingExpiry");
+        await expireBookings();
 
-        const totalAreas = await ParkingArea.countDocuments();
+        const todayStart = new Date();
+        todayStart.setHours(0, 0, 0, 0);
 
-        const totalSlots = await ParkingSlot.countDocuments();
+        const [slotStats, totalAreas, activeBookings, totalBookings, completedBookings, cancelledBookings, todayBookings] = await Promise.all([
+            ParkingSlot.aggregate([
+                { $group: { _id: "$status", count: { $sum: 1 } } }
+            ]),
+            ParkingArea.countDocuments(),
+            Booking.countDocuments({ status: "active" }),
+            Booking.countDocuments(),
+            Booking.countDocuments({ status: "completed" }),
+            Booking.countDocuments({ status: "cancelled" }),
+            Booking.countDocuments({ createdAt: { $gte: todayStart } })
+        ]);
 
-        const availableSlots = await ParkingSlot.countDocuments({
-            status: "available"
-        });
+        const statusMap = slotStats.reduce((acc, s) => {
+            acc[s._id] = s.count;
+            return acc;
+        }, { available: 0, reserved: 0, occupied: 0, blocked: 0 });
 
-        const occupiedSlots = await ParkingSlot.countDocuments({
-            status: "occupied"
-        });
-
-        const reservedSlots = await ParkingSlot.countDocuments({
-            status: "reserved"
-        });
-
-        const blockedSlots = await ParkingSlot.countDocuments({
-            status: "blocked"
-        });
-
-        const activeBookings = await Booking.countDocuments({
-            status: "active"
-        });
+        const totalSlots = Object.values(statusMap).reduce((a, b) => a + b, 0);
+        const usedCapacity = statusMap.occupied + statusMap.reserved;
+        const parkingUtilization = totalSlots > 0
+            ? Number(((usedCapacity / totalSlots) * 100).toFixed(2))
+            : 0;
 
         res.status(200).json({
             totalAreas,
             totalSlots,
-            availableSlots,
-            reservedSlots,
-            occupiedSlots,
-            blockedSlots,
-            activeBookings
+            availableSlots: statusMap.available,
+            reservedSlots: statusMap.reserved,
+            occupiedSlots: statusMap.occupied,
+            blockedSlots: statusMap.blocked,
+            activeBookings,
+            totalBookings,
+            completedBookings,
+            cancelledBookings,
+            todayBookings,
+            parkingUtilization
         });
 
     } catch (error) {

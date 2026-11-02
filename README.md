@@ -80,7 +80,30 @@ A slot that is reserved for one time period can still be available for another n
 - VS Code
 - Postman
 
-## How to Run the Project
+## Quick Start (Root Directory)
+
+You can run commands directly from the root workspace:
+
+```bash
+# Install dependencies in both backend and frontend
+npm run install:all
+
+# Start backend server (port 5001)
+npm run backend
+
+# Start frontend dev server (port 5173)
+npm run frontend
+
+# Run automated backend test suite
+npm test
+
+# Build frontend for production
+npm run build
+```
+
+---
+
+## How to Run the Project (Separate Terminals)
 
 ### Start the Backend
 
@@ -102,17 +125,103 @@ npm install
 npm run dev
 ```
 
+### Create or Promote an Admin Account
+
+To promote any registered user to an administrator:
+
+```bash
+cd backend
+npm run make-admin <user-email>
+# Example: npm run make-admin kul@gmail.com
+```
+
+Or create a new admin account:
+```bash
+cd backend
+node scripts/make-admin.js --create "Admin Name" "admin@campus.edu" "SecurePassword123" "ADMIN01"
+```
+npm install
+npm run dev
+```
+
+### Run Automated Tests
+
+```bash
+cd backend
+npm test
+```
+
 ## Environment Variables
 
-Create a `.env` file inside the `backend` folder.
-
+### Backend (`backend/.env`)
 ```env
 MONGO_URI=your_mongodb_connection_string
 JWT_SECRET=your_jwt_secret
 PORT=5001
+FRONTEND_URL=https://smart-campus-parking.vercel.app
 ```
 
-**Never commit your `.env` file to GitHub.**
+### Frontend (`frontend/.env` / `frontend/.env.local`)
+```env
+VITE_API_URL=https://smart-campus-parking.onrender.com/api
+# Or for local development:
+# VITE_API_URL=http://localhost:5001/api
+```
+
+## System Architecture
+
+```text
+User Browser
+    │
+    ▼
+Vercel (React + Vite Single-Page Application)
+    │
+    ▼ HTTPS / REST API (JWT Authenticated)
+Render (Node.js + Express.js API Server)
+    │
+    ▼ Mongoose ODM
+MongoDB Atlas (Cloud Database with Compound Indexes & Transactions)
+```
+
+## REST API Reference
+
+### 🔐 Authentication
+| Method | Endpoint | Access | Description |
+|---|---|---|---|
+| `POST` | `/api/auth/register` | Public | Register new user account with hashed password |
+| `POST` | `/api/auth/login` | Public | User login returning JWT authentication token |
+| `GET` | `/api/auth/profile` | Protected | Fetch current user authenticated profile |
+
+### 🅿️ Parking Areas & Slots
+| Method | Endpoint | Access | Description |
+|---|---|---|---|
+| `GET` | `/api/parking/areas` | Public | List all parking areas |
+| `GET` | `/api/parking/areas/stats` | Public | Real-time occupancy statistics per parking area |
+| `GET` | `/api/parking/areas/:areaId/slots` | Public | List all slots of a parking area with live status |
+| `GET` | `/api/parking/areas/:areaId/available-slots` | Public | Filter slots available for requested time period |
+| `POST` | `/api/parking/areas` | Admin | Create a new parking area |
+| `POST` | `/api/parking/slots` | Admin | Create an individual parking slot |
+| `POST` | `/api/parking/slots/bulk` | Admin | Bulk create parking slots (A1, A2, etc.) |
+| `PATCH`| `/api/parking/slots/:slotId/status` | Admin | Block or unblock a parking slot |
+
+### 📋 Bookings
+| Method | Endpoint | Access | Description |
+|---|---|---|---|
+| `POST` | `/api/bookings` | Protected | Create booking with overlap prevention |
+| `GET` | `/api/bookings/my-bookings` | Protected | Fetch user's booking history (with pagination) |
+| `PATCH`| `/api/bookings/:id/cancel` | Protected | Cancel an active reservation |
+| `DELETE`| `/api/bookings/:id` | Protected | Cancel an active reservation |
+| `GET` | `/api/bookings/verify/:bookingId` | Admin | Verify QR code booking validity |
+| `PATCH`| `/api/bookings/entry/:bookingId` | Admin | Record vehicle arrival / entry timestamp |
+| `PATCH`| `/api/bookings/exit/:bookingId` | Admin | Record vehicle exit timestamp and complete booking |
+| `GET` | `/api/bookings/all` | Admin | View all system bookings with search & date filters |
+
+### ⚡ Admin & Analytics
+| Method | Endpoint | Access | Description |
+|---|---|---|---|
+| `GET` | `/api/admin/dashboard` | Admin | Verify admin authentication and dashboard status |
+| `GET` | `/api/admin/stats` | Admin | Comprehensive metrics (total, occupied, utilization %) |
+| `POST` | `/api/admin/create-admin` | Admin/Setup | Create admin user account |
 
 ## Project Structure
 

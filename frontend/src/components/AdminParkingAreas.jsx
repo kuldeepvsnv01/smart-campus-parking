@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import api from "../api/axiosInstance";
 
 function AdminParkingAreas() {
     const [areas, setAreas] = useState([]);
@@ -8,63 +8,16 @@ function AdminParkingAreas() {
 
     const fetchAreas = async () => {
         try {
-            const response = await axios.get(
-                "https://smart-campus-parking.onrender.com/api/parking/areas"
-            );
+            // Both requests run in parallel — 2 total network calls
+            // regardless of how many parking areas exist, instead of
+            // 1 + N (one extra request per area).
+            const [areasResponse, statsResponse] = await Promise.all([
+                api.get("/parking/areas"),
+                api.get("/parking/areas/stats")
+            ]);
 
-            const parkingAreas =
-                response.data.areas || [];
-
-            setAreas(parkingAreas);
-
-            // Fetch slots for each area
-            const stats = {};
-
-            await Promise.all(
-                parkingAreas.map(async (area) => {
-
-                    try {
-                        const slotsResponse =
-                            await axios.get(
-                                `https://smart-campus-parking.onrender.com/api/parking/areas/${area._id}/slots`
-                            );
-
-                        const slots =
-                            slotsResponse.data.slots || [];
-
-                        const available = slots.filter(
-                            (slot) =>
-                                slot.status === "available"
-                        ).length;
-
-                        const occupied = slots.filter(
-                            (slot) =>
-                                slot.status === "occupied"
-                        ).length;
-
-                        stats[area._id] = {
-                            total: slots.length,
-                            available,
-                            occupied
-                        };
-
-                    } catch (error) {
-
-                        console.error(
-                            `Failed to fetch slots for ${area.name}:`,
-                            error
-                        );
-
-                        stats[area._id] = {
-                            total: 0,
-                            available: 0,
-                            occupied: 0
-                        };
-                    }
-                })
-            );
-
-            setAreaStats(stats);
+            setAreas(areasResponse.data.areas || []);
+            setAreaStats(statsResponse.data.stats || {});
 
         } catch (error) {
 

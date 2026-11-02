@@ -7,13 +7,11 @@ const parkingSlotSchema = new mongoose.Schema(
             required: true,
             trim: true
         },
-
         parkingArea: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "ParkingArea",
             required: true
         },
-
         status: {
             type: String,
             enum: ["available", "reserved", "occupied", "blocked"],
@@ -24,5 +22,9 @@ const parkingSlotSchema = new mongoose.Schema(
         timestamps: true
     }
 );
+
+parkingSlotSchema.index({ parkingArea: 1, status: 1 });
+parkingSlotSchema.index({ status: 1 });
+parkingSlotSchema.index({ parkingArea: 1, slotNumber: 1 }, { unique: true });
 
 module.exports = mongoose.model("ParkingSlot", parkingSlotSchema);
